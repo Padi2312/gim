@@ -8,7 +8,7 @@ import (
 )
 
 type Gim struct {
-	x, y             int
+	cursor           pkg.Cursor
 	mode             pkg.Event
 	buffer           [][]rune
 	commandHandler   *handlers.CommandHandler
@@ -19,8 +19,7 @@ func NewVimEditor() *Gim {
 	buffer := make([][]rune, 1)
 	buffer[0] = make([]rune, 0)
 	return &Gim{
-		x:                1,
-		y:                1,
+		cursor:           *pkg.NewCursor(),
 		mode:             pkg.Normal,
 		buffer:           buffer,
 		commandHandler:   handlers.NewCommandMode(),
@@ -35,7 +34,7 @@ func (v *Gim) Run() {
 	go v.keyboardListener.Listen(keyboardInputChannel)
 
 	for {
-		goterm.MoveCursor(v.x, v.y)
+		goterm.MoveCursor(v.cursor.X, v.cursor.Y)
 		goterm.Flush()
 
 		keyEvent := <-keyboardInputChannel
@@ -57,7 +56,7 @@ func (v *Gim) Run() {
 }
 
 func (v *Gim) ConvertCursorToBufferIndex() (int, int) {
-	return v.x - 1, v.y - 1
+	return v.cursor.X - 1, v.cursor.Y - 1
 }
 
 func (v *Gim) handleNormalMode(char rune, key keyboard.Key) {
@@ -100,12 +99,29 @@ func (v *Gim) handleInsertMode(char rune, key keyboard.Key) {
 	if key == keyboard.KeyEsc {
 		v.mode = pkg.Normal
 	} else if key == keyboard.KeyEnter {
+		// Create new line and move the remaining characters
+		remainingChars := v.buffer[bufY][bufX:]
+		newRow := make([]rune, len(remainingChars))
+		copy(newRow, remainingChars)
+
+		// Truncate current line at cursor position
+		v.buffer[bufY] = v.buffer[bufY][:bufX]
+
+		// Shift all lines below down by one
+		v.buffer = append(v.buffer, nil) // make room for a new line
+		copy(v.buffer[bufY+2:], v.buffer[bufY+1:])
+		v.buffer[bufY+1] = newRow
+
+		// Redraw all lines from the current one down
+		for i := bufY; i < len(v.buffer); i++ {
+			goterm.MoveCursor(1, i+1)
+			goterm.Print(string(v.buffer[i]))
+			goterm.Print(" ") // Clear residual characters
+		}
+
+		// Move cursor to the beginning of the new line
 		v.y++
 		v.x = 1
-		if v.y > len(v.buffer) {
-			newRow := make([]rune, 1)
-			v.buffer = append(v.buffer, newRow)
-		}
 	} else if key == keyboard.KeyBackspace {
 		if v.x > 1 {
 			// Shift characters to the left starting from the cursor position
