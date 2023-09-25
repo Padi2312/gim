@@ -1,92 +1,63 @@
 package main
 
 import (
-	"os"
-
 	"github.com/buger/goterm"
 	"github.com/eiannone/keyboard"
-)
-
-const (
-	Normal = iota
-	Insert
-	Command
+	"github.com/padi2312/govim/pkg"
+	"github.com/padi2312/govim/pkg/handlers"
 )
 
 type Gim struct {
-	x, y   int
-	mode   int
-	buffer [][]rune
+	x, y             int
+	mode             pkg.Event
+	buffer           [][]rune
+	commandHandler   *handlers.CommandHandler
+	keyboardListener *pkg.KeyboardListener
 }
 
 func NewVimEditor() *Gim {
 	buffer := make([][]rune, 1)
-	buffer[0] = make([]rune, 1)
+	buffer[0] = make([]rune, 0)
 	return &Gim{
-		x:      1,
-		y:      1,
-		mode:   Normal,
-		buffer: buffer,
+		x:                1,
+		y:                1,
+		mode:             pkg.Normal,
+		buffer:           buffer,
+		commandHandler:   handlers.NewCommandMode(),
+		keyboardListener: pkg.NewKeyboardListener(),
 	}
 }
 
 func (v *Gim) Run() {
+	eventListener := pkg.NewEventListener()
+	keyboardInputChannel := make(chan pkg.KeyEvent)
+
+	go v.keyboardListener.Listen(keyboardInputChannel)
+
 	for {
 		goterm.MoveCursor(v.x, v.y)
 		goterm.Flush()
 
-		char, key, err := keyboard.GetKey()
-		if err != nil {
-			panic(err)
+		keyEvent := <-keyboardInputChannel
+		switch v.mode {
+		case pkg.Normal:
+			v.handleNormalMode(keyEvent.Char, keyEvent.Key)
+		case pkg.Insert:
+			v.handleInsertMode(keyEvent.Char, keyEvent.Key)
+		case pkg.Command:
+			if !v.commandHandler.Handle(keyEvent.Char, keyEvent.Key) {
+				v.mode = pkg.Normal
+			}
 		}
 
-		switch v.mode {
-		case Normal:
-			v.handleNormalMode(char, key)
-			if char == ':' {
-				v.mode = Command
-				v.buffer = append(v.buffer, []rune(":"))
-			}
-		case Insert:
-			v.handleInsertMode(char, key)
-		case Command:
-			v.handleCommandMode(char, key)
+		if v.mode == pkg.Normal {
+			v.mode = eventListener.CheckHandlerEvent(keyEvent)
 		}
 	}
 }
 
 func (v *Gim) ConvertCursorToBufferIndex() (int, int) {
 	return v.x - 1, v.y - 1
-}
-
-func (v *Gim) handleCommandMode(char rune, key keyboard.Key) {
-	staticPrompt := ":"
-	if key == keyboard.KeyEnter {
-		command := string(v.buffer[len(v.buffer)-1])[len(staticPrompt):]
-		switch command {
-		case "q":
-			// Exit the editor
-			os.Exit(1)
-			return
-			// Additional commands can be added here
-		}
-		// Clear command line and switch back to normal mode
-		v.buffer[len(v.buffer)-1] = []rune(staticPrompt)
-		v.mode = Normal
-	} else if key == keyboard.KeyBackspace {
-		if len(v.buffer[len(v.buffer)-1]) > len(staticPrompt) {
-			// Remove the last character in the command
-			v.buffer[len(v.buffer)-1] = v.buffer[len(v.buffer)-1][:len(v.buffer[len(v.buffer)-1])-1]
-		}
-	} else {
-		// Append typed character to the command
-		v.buffer[len(v.buffer)-1] = append(v.buffer[len(v.buffer)-1], char)
-	}
-
-	// Redraw the command line at the bottom
-	goterm.MoveCursor(1, goterm.Height())
-	goterm.Print(goterm.Background(goterm.Color(string(v.buffer[len(v.buffer)-1]), goterm.BLACK), goterm.WHITE))
-	goterm.Flush()
 }
 
 func (v *Gim) handleNormalMode(char rune, key keyboard.Key) {
@@ -119,17 +90,15 @@ func (v *Gim) handleNormalMode(char rune, key keyboard.Key) {
 		if bufX < len(v.buffer[bufY])-1 && v.buffer[bufY][bufX] != 0 {
 			v.x++
 		}
-	case 'q':
-		return
 	case 'i':
-		v.mode = Insert
+		v.mode = pkg.Insert
 	}
 }
 
 func (v *Gim) handleInsertMode(char rune, key keyboard.Key) {
 	bufX, bufY := v.ConvertCursorToBufferIndex()
 	if key == keyboard.KeyEsc {
-		v.mode = Normal
+		v.mode = pkg.Normal
 	} else if key == keyboard.KeyEnter {
 		v.y++
 		v.x = 1
@@ -179,11 +148,6 @@ func (v *Gim) handleInsertMode(char rune, key keyboard.Key) {
 }
 
 func main() {
-	if err := keyboard.Open(); err != nil {
-		panic(err)
-	}
-	defer keyboard.Close()
-
 	goterm.Clear()
 	vim := NewVimEditor()
 	vim.Run()
