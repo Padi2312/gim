@@ -1,13 +1,24 @@
 package pkg
 
+type ChangeLog struct {
+	ActionType string // "Insert", "Delete", "NewLine"
+	Char       rune   // Character inserted or deleted
+	X, Y       int    // Coordinates of the change
+	LineLength int    // Line length BEFORE changes
+}
+
 type Content struct {
-	Buffer [][]rune
+	Buffer    [][]rune
+	Changelog []ChangeLog
 }
 
 func NewContent() *Content {
 	buffer := make([][]rune, 1)
 	buffer[0] = make([]rune, 0)
-	return &Content{Buffer: buffer}
+	return &Content{
+		Buffer:    buffer,
+		Changelog: make([]ChangeLog, 0),
+	}
 }
 
 func (c *Content) LineLength(lineNumber int) int {
@@ -20,13 +31,25 @@ func (c *Content) TotalLines() int {
 }
 
 func (c *Content) InsertAtCursorV2(keyEvent KeyEvent, cursor *Cursor) {
-	_, y := c.getBufferIndices(cursor)
+	x, y := c.getBufferIndices(cursor)
 
 	switch keyEvent.Char {
 	case '\n':
-		c.Buffer[y] = append(c.Buffer[y], '\n')
-		c.Buffer = append(c.Buffer, make([]rune, 0))
+		if cursor.X == c.LineLength(cursor.Y)+1 {
+			c.Buffer = append(c.Buffer, make([]rune, 0))
+		} else {
+			change := ChangeLog{"NewLine", keyEvent.Char, cursor.X, cursor.Y, len(c.Buffer[y])}
+			c.Changelog = append(c.Changelog, change)
+
+			remaining := c.Buffer[y][:x]
+			newLineContent := c.Buffer[y][x:]
+
+			c.Buffer[y] = remaining
+			c.Buffer = append(c.Buffer, newLineContent)
+		}
 	default:
+		change := ChangeLog{"Insert", keyEvent.Char, cursor.X, cursor.Y, len(c.Buffer[y])}
+		c.Changelog = append(c.Changelog, change)
 		c.Buffer[y] = append(c.Buffer[y], keyEvent.Char)
 	}
 }

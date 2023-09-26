@@ -12,8 +12,28 @@ func NewNavigation(content *Content, cursor *Cursor) *Navigation {
 	}
 }
 
-func (n *Navigation) MoveLeft() {
+func (n *Navigation) MoveUp() {
+	n.cursor.Up()
+	if n.cursor.X > n.content.LineLength(n.cursor.Y) {
+		n.cursor.SetX(n.content.LineLength(n.cursor.Y))
+	}
+}
 
+func (n *Navigation) MoveDown() {
+	if n.cursor.Y+1 <= n.content.TotalLines() {
+		n.cursor.Down()
+	}
+}
+
+func (n *Navigation) MoveDownLineBegin() {
+	if n.cursor.Y+1 <= n.content.TotalLines() {
+		n.cursor.Down()
+		n.cursor.SetX(1)
+	}
+}
+
+func (n *Navigation) MoveLeft() {
+	n.cursor.Left()
 }
 
 func (n *Navigation) MoveRight(isInsert bool) {
@@ -22,7 +42,7 @@ func (n *Navigation) MoveRight(isInsert bool) {
 		currentLineLength++
 	}
 
-	if n.cursor.X <= currentLineLength {
+	if n.cursor.X+1 <= currentLineLength {
 		n.cursor.Right()
 	}
 }

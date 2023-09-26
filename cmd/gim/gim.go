@@ -20,17 +20,20 @@ type GimV2 struct {
 	content    *pkg.Content
 	cursor     *pkg.Cursor
 	navigation *pkg.Navigation
+	display    *pkg.Display
 }
 
 func NewGimV2() *GimV2 {
 	content := pkg.NewContent()
 	cursor := pkg.NewCursor()
+	display := pkg.NewDisplay(cursor, content)
 	navigation := pkg.NewNavigation(content, cursor)
 	return &GimV2{
 		mode:       Normal,
 		content:    content,
 		cursor:     cursor,
 		navigation: navigation,
+		display:    display,
 	}
 }
 
@@ -62,6 +65,8 @@ func (g *GimV2) Run() {
 		case Visual:
 			break
 		}
+		g.display.DrawChanges(g.content.Changelog)
+		g.content.Changelog = g.content.Changelog[:0] //make([]pkg.ChangeLog, 0)
 	}
 }
 
@@ -78,11 +83,11 @@ func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
 	case 'i':
 		g.switchMode(Insert)
 	case 'h':
-		g.cursor.Left()
+		g.navigation.MoveLeft()
 	case 'j':
-		g.cursor.Down()
+		g.navigation.MoveDown()
 	case 'k':
-		g.cursor.Up()
+		g.navigation.MoveUp()
 	case 'l':
 		//g.cursor.Right()
 		g.navigation.MoveRight(false)
@@ -92,13 +97,14 @@ func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
 func (g *GimV2) HandleInsert(keyEvent pkg.KeyEvent) {
 	if keyEvent.Key == 0 {
 		g.content.InsertAtCursorV2(keyEvent, g.cursor)
+		g.display.DrawChar(keyEvent.Char)
 		g.navigation.MoveRight(true)
-		return
 	} else {
 		switch keyEvent.Key {
 		case keyboard.KeyEnter:
 			keyEvent.Char = '\n'
 			g.content.InsertAtCursorV2(keyEvent, g.cursor)
+			g.navigation.MoveDownLineBegin()
 		case keyboard.KeyBackspace:
 			break
 		case keyboard.KeySpace:
@@ -109,8 +115,8 @@ func (g *GimV2) HandleInsert(keyEvent pkg.KeyEvent) {
 		}
 	}
 
-	// Flush to display 
-	// Maybe using content to flash ? Or go background channel for updating display 
+	// Flush to display
+	// Maybe using content to flash ? Or go background channel for updating display
 }
 
 func main() {

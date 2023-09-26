@@ -23,10 +23,12 @@ func (c *Cursor) Update() {
 
 func (c *Cursor) SetX(x int) {
 	c.X = x
+	c.Update()
 }
 
 func (c *Cursor) SetY(y int) {
 	c.Y = y
+	c.Update()
 }
 
 func (c *Cursor) JumpStartOfLine(lineNumber int) {
@@ -59,7 +61,6 @@ func (c *Cursor) Left() {
 }
 
 func (c *Cursor) Right() {
-	// Check conditions outside cursor for more control and remove reference to content
 	c.X++
 	c.Update()
 }
