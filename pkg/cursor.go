@@ -3,18 +3,16 @@ package pkg
 import "github.com/buger/goterm"
 
 type Cursor struct {
-	X       int
-	Y       int
-	content *Content
+	X int
+	Y int
 }
 
-func NewCursor(content *Content) *Cursor {
+func NewCursor() *Cursor {
 	goterm.MoveCursor(1, 1)
 	goterm.Flush()
 	return &Cursor{
-		X:       1,
-		Y:       1,
-		content: content,
+		X: 1,
+		Y: 1,
 	}
 }
 
@@ -35,14 +33,12 @@ func (c *Cursor) JumpStartOfLine(lineNumber int) {
 	c.X = 1
 	c.Y = lineNumber
 }
-func (c *Cursor) GotoLineEnd() {
-	c.X = c.content.LineLength(c.Y) + 1
-	c.Update()
-}
+
 func (c *Cursor) JumpEndOfLine(lineNumber int) {
 	c.X = 1
 	c.Y = lineNumber
 }
+
 func (c *Cursor) Up() {
 	if c.Y > 1 {
 		c.Y--
@@ -51,10 +47,8 @@ func (c *Cursor) Up() {
 }
 
 func (c *Cursor) Down() {
-	if c.Y+1 <= c.content.LineCount() {
-		c.Y++
-		c.Update()
-	}
+	c.Y++
+	c.Update()
 }
 
 func (c *Cursor) Left() {
@@ -65,8 +59,7 @@ func (c *Cursor) Left() {
 }
 
 func (c *Cursor) Right() {
-	if c.X <= c.content.LineLength(c.Y) {
-		c.X++
-		c.Update()
-	}
+	// Check conditions outside cursor for more control and remove reference to content
+	c.X++
+	c.Update()
 }

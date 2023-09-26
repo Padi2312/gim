@@ -1,12 +1,5 @@
 package pkg
 
-import (
-	"strings"
-
-	"github.com/buger/goterm"
-	"github.com/eiannone/keyboard"
-)
-
 type Content struct {
 	Buffer [][]rune
 }
@@ -22,67 +15,19 @@ func (c *Content) LineLength(lineNumber int) int {
 	return len(c.Buffer[lineNumber-1])
 }
 
-func (c *Content) LineCount() int {
+func (c *Content) TotalLines() int {
 	return len(c.Buffer)
 }
 
-func (c *Content) InsertAtCursor(keyEvent KeyEvent, cursor *Cursor) {
-	x, y := c.getBufferIndices(cursor)
-	if keyEvent.Key == keyboard.KeyEnter {
-		if c.LineLength(cursor.Y)+1 == cursor.X {
-			c.Buffer[y] = append(c.Buffer[y], '\n')
-			c.Buffer = append(c.Buffer, make([]rune, 0))
-			// Call start to jump before and then navigate down
-			cursor.JumpStartOfLine(cursor.Y)
-			cursor.Down()
-		} else {
-			var appendingPart, remaining []rune
-			appendingPart = make([]rune, len(c.Buffer[y][:x])) // Initialize appendingPart with the desired length
-			remaining = make([]rune, len(c.Buffer[y][x:]))     // Initialize remaining with the desired length
-			copy(appendingPart, c.Buffer[y][:x])
-			copy(remaining, c.Buffer[y][x:])
+func (c *Content) InsertAtCursorV2(keyEvent KeyEvent, cursor *Cursor) {
+	_, y := c.getBufferIndices(cursor)
 
-			c.Buffer[y] = append(appendingPart, '\n')
-			c.Buffer = append(c.Buffer, remaining)
-			goterm.Print(strings.Repeat(" ", len(remaining)))
-			goterm.Flush()
-
-			cursor.JumpStartOfLine(cursor.Y)
-			cursor.Down()
-			goterm.Print(string(c.Buffer[cursor.Y-1]))
-			goterm.Flush()
-			cursor.GotoLineEnd()
-		}
-	} else if keyEvent.Key == keyboard.KeyBackspace {
-		c.Buffer[y] = c.Buffer[y][:len(c.Buffer[y])-1]
-		cursor.Left()
-		goterm.Print(" ")
-		goterm.Flush()
-		// TODO: Figure out why i have to manually update the cursor here
-		cursor.Update()
-	} else if keyEvent.Key == 0 || keyEvent.Key == keyboard.KeySpace {
-		if keyEvent.Key == keyboard.KeySpace {
-			keyEvent.Char = ' '
-		}
-
-		if c.LineLength(cursor.Y)+1 == cursor.X {
-			c.Buffer[y] = append(c.Buffer[y], keyEvent.Char)
-		} else {
-			var appendingPart, remaining []rune
-			appendingPart = make([]rune, len(c.Buffer[y][:x])) // Initialize appendingPart with the desired length
-			remaining = make([]rune, len(c.Buffer[y][x:]))     // Initialize remaining with the desired length
-			copy(appendingPart, c.Buffer[y][:x])
-			copy(remaining, c.Buffer[y][x:])
-			appendingPart = append(appendingPart, keyEvent.Char)
-			appendingPart = append(appendingPart, remaining...)
-			c.Buffer[y] = appendingPart
-		}
-		goterm.Print(string(c.Buffer[y][x:]))
-		goterm.Flush()
-
-		cursor.Right()
-	} else {
-		return
+	switch keyEvent.Char {
+	case '\n':
+		c.Buffer[y] = append(c.Buffer[y], '\n')
+		c.Buffer = append(c.Buffer, make([]rune, 0))
+	default:
+		c.Buffer[y] = append(c.Buffer[y], keyEvent.Char)
 	}
 }
 

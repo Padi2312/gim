@@ -16,16 +16,21 @@ const (
 )
 
 type GimV2 struct {
-	mode    Mode
-	content *pkg.Content
-	cursor  *pkg.Cursor
+	mode       Mode
+	content    *pkg.Content
+	cursor     *pkg.Cursor
+	navigation *pkg.Navigation
 }
 
 func NewGimV2() *GimV2 {
 	content := pkg.NewContent()
+	cursor := pkg.NewCursor()
+	navigation := pkg.NewNavigation(content, cursor)
 	return &GimV2{
-		content: content,
-		cursor:  pkg.NewCursor(content),
+		mode:       Normal,
+		content:    content,
+		cursor:     cursor,
+		navigation: navigation,
 	}
 }
 
@@ -39,6 +44,9 @@ func (g *GimV2) Run() {
 
 		// Intercept ESC key to return back to Normal mode
 		if keyEvent.Key > 0 && keyEvent.Key == keyboard.KeyEsc {
+			if g.mode != Normal {
+				g.cursor.Left()
+			}
 			g.switchMode(Normal)
 			continue
 		}
@@ -76,12 +84,33 @@ func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
 	case 'k':
 		g.cursor.Up()
 	case 'l':
-		g.cursor.Right()
+		//g.cursor.Right()
+		g.navigation.MoveRight(false)
 	}
 }
 
 func (g *GimV2) HandleInsert(keyEvent pkg.KeyEvent) {
-	g.content.InsertAtCursor(keyEvent, g.cursor)
+	if keyEvent.Key == 0 {
+		g.content.InsertAtCursorV2(keyEvent, g.cursor)
+		g.navigation.MoveRight(true)
+		return
+	} else {
+		switch keyEvent.Key {
+		case keyboard.KeyEnter:
+			keyEvent.Char = '\n'
+			g.content.InsertAtCursorV2(keyEvent, g.cursor)
+		case keyboard.KeyBackspace:
+			break
+		case keyboard.KeySpace:
+			keyEvent.Char = ' '
+			g.content.InsertAtCursorV2(keyEvent, g.cursor)
+			g.navigation.MoveRight(true)
+
+		}
+	}
+
+	// Flush to display 
+	// Maybe using content to flash ? Or go background channel for updating display 
 }
 
 func main() {
