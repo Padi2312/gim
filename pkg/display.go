@@ -1,10 +1,6 @@
 package pkg
 
-import (
-	"strings"
-
-	"github.com/buger/goterm"
-)
+import "github.com/buger/goterm"
 
 type Display struct {
 	cursor  *Cursor
@@ -24,29 +20,16 @@ func (d *Display) DrawChar(char rune) {
 	goterm.Flush()
 }
 
-func (d *Display) DrawChanges(changes []ChangeLog) {
-	for _, change := range changes {
-		switch change.ActionType {
-		case "Insert":
-			goterm.MoveCursor(change.X, change.Y)
-			goterm.Print(string(change.Char))
-
-		case "NewLine":
-			goterm.MoveCursor(change.X, change.Y)
-
-			// Clear from the cursor to the end of the line by printing spaces
-			// The number of spaces would be the difference between the end of the line and the cursor
-			nSpaces := change.LineLength - d.content.LineLength(change.Y)
-			strings.Repeat(" ", nSpaces)
-			for i := 0; i < nSpaces; i++ {
-				goterm.Print(" ")
-			}
+func (d *Display) Update(chaneQueue *ChangeQueue) {
+	for !chaneQueue.IsEmpty() {
+		change := chaneQueue.Dequeue()
+		if change.ChangeInst == Remove {
+			goterm.MoveCursor(change.From, change.Line)
+			goterm.Print(change.Content)
+		} else {
+			goterm.MoveCursor(change.From, change.Line)
+			goterm.Print(change.Content)
 		}
 	}
-
-	// Clear the changes slice
-	changes = changes[:0]
-
-	// Update the terminal screen
 	goterm.Flush()
 }

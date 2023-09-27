@@ -16,24 +16,27 @@ const (
 )
 
 type GimV2 struct {
-	mode       Mode
-	content    *pkg.Content
-	cursor     *pkg.Cursor
-	navigation *pkg.Navigation
-	display    *pkg.Display
+	mode        Mode
+	content     *pkg.Content
+	cursor      *pkg.Cursor
+	navigation  *pkg.Navigation
+	display     *pkg.Display
+	changeQueue *pkg.ChangeQueue
 }
 
 func NewGimV2() *GimV2 {
-	content := pkg.NewContent()
+	changeQueue := pkg.NewChangeQueue()
+	content := pkg.NewContent(changeQueue)
 	cursor := pkg.NewCursor()
 	display := pkg.NewDisplay(cursor, content)
 	navigation := pkg.NewNavigation(content, cursor)
 	return &GimV2{
-		mode:       Normal,
-		content:    content,
-		cursor:     cursor,
-		navigation: navigation,
-		display:    display,
+		mode:        Normal,
+		content:     content,
+		cursor:      cursor,
+		navigation:  navigation,
+		display:     display,
+		changeQueue: changeQueue,
 	}
 }
 
@@ -65,8 +68,9 @@ func (g *GimV2) Run() {
 		case Visual:
 			break
 		}
-		g.display.DrawChanges(g.content.Changelog)
-		g.content.Changelog = g.content.Changelog[:0] //make([]pkg.ChangeLog, 0)
+		g.display.Update(g.changeQueue)
+		//g.display.DrawChanges(g.content.Changelog)
+		//g.content.Changelog = g.content.Changelog[:0] //make([]pkg.ChangeLog, 0)
 	}
 }
 
@@ -89,34 +93,29 @@ func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
 	case 'k':
 		g.navigation.MoveUp()
 	case 'l':
-		//g.cursor.Right()
 		g.navigation.MoveRight(false)
 	}
 }
 
 func (g *GimV2) HandleInsert(keyEvent pkg.KeyEvent) {
 	if keyEvent.Key == 0 {
-		g.content.InsertAtCursorV2(keyEvent, g.cursor)
-		g.display.DrawChar(keyEvent.Char)
+		g.content.InsertBeforeCursor(keyEvent, g.cursor)
 		g.navigation.MoveRight(true)
 	} else {
 		switch keyEvent.Key {
 		case keyboard.KeyEnter:
 			keyEvent.Char = '\n'
-			g.content.InsertAtCursorV2(keyEvent, g.cursor)
+			g.content.InsertBeforeCursor(keyEvent, g.cursor)
+			// CursorChangeQueue because display gets updated at the end of loop
 			g.navigation.MoveDownLineBegin()
 		case keyboard.KeyBackspace:
 			break
 		case keyboard.KeySpace:
 			keyEvent.Char = ' '
-			g.content.InsertAtCursorV2(keyEvent, g.cursor)
+			g.content.InsertBeforeCursor(keyEvent, g.cursor)
 			g.navigation.MoveRight(true)
-
 		}
 	}
-
-	// Flush to display
-	// Maybe using content to flash ? Or go background channel for updating display
 }
 
 func main() {
