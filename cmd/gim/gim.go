@@ -29,7 +29,7 @@ func NewGimV2() *GimV2 {
 	content := pkg.NewContent(changeQueue)
 	cursor := pkg.NewCursor()
 	display := pkg.NewDisplay(cursor, content)
-	navigation := pkg.NewNavigation(content, cursor)
+	navigation := pkg.NewNavigation(content, cursor, changeQueue)
 	return &GimV2{
 		mode:        Normal,
 		content:     content,
@@ -41,9 +41,13 @@ func NewGimV2() *GimV2 {
 }
 
 func (g *GimV2) Run() {
+	// Setup keyboard listener
 	keyboadListener := *pkg.NewKeyboardListener()
 	keyboardOutput := make(chan pkg.KeyEvent)
 	go keyboadListener.Listen(keyboardOutput)
+
+	// Init display
+	g.display.Init()
 
 	for {
 		keyEvent := <-keyboardOutput
@@ -51,10 +55,9 @@ func (g *GimV2) Run() {
 		// Intercept ESC key to return back to Normal mode
 		if keyEvent.Key > 0 && keyEvent.Key == keyboard.KeyEsc {
 			if g.mode != Normal {
-				g.cursor.Left()
+				g.navigation.MoveLeft()
 			}
 			g.switchMode(Normal)
-			continue
 		}
 
 		// Depending on the curret mode the inputs are treated different
@@ -68,9 +71,9 @@ func (g *GimV2) Run() {
 		case Visual:
 			break
 		}
+
+		// Updates the terminal according to the changes
 		g.display.Update(g.changeQueue)
-		//g.display.DrawChanges(g.content.Changelog)
-		//g.content.Changelog = g.content.Changelog[:0] //make([]pkg.ChangeLog, 0)
 	}
 }
 
@@ -79,10 +82,6 @@ func (g *GimV2) switchMode(mode Mode) {
 }
 
 func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
-	if keyEvent.Char == 'i' {
-		g.switchMode(Insert)
-	}
-
 	switch keyEvent.Char {
 	case 'i':
 		g.switchMode(Insert)
@@ -94,6 +93,8 @@ func (g *GimV2) HandleNormal(keyEvent pkg.KeyEvent) {
 		g.navigation.MoveUp()
 	case 'l':
 		g.navigation.MoveRight(false)
+	default:
+		return
 	}
 }
 
@@ -106,9 +107,10 @@ func (g *GimV2) HandleInsert(keyEvent pkg.KeyEvent) {
 		case keyboard.KeyEnter:
 			keyEvent.Char = '\n'
 			g.content.InsertBeforeCursor(keyEvent, g.cursor)
-			// CursorChangeQueue because display gets updated at the end of loop
 			g.navigation.MoveDownLineBegin()
 		case keyboard.KeyBackspace:
+			g.content.DeleteBeforeCursor(g.cursor)
+			g.navigation.MoveLeft()
 			break
 		case keyboard.KeySpace:
 			keyEvent.Char = ' '

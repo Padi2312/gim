@@ -5,14 +5,14 @@ type ChangeInst = int
 const (
 	Write ChangeInst = iota
 	Remove
+	Set
 )
 
 type ChangeRequest struct {
 	ChangeInst ChangeInst
 	Line       int
-	From       int
-	To         int
-	Content    string
+	Column     int
+	Content    *string
 }
 
 type ChangeQueue struct {
