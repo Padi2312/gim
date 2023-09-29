@@ -17,9 +17,13 @@ func NewTerm(navigation *Navigation) *Term {
 	}
 }
 
-// Show the VIM command line at the bottom of terminal
-func (t *Term) ShowCommandLine(symbol string) {
-	goterm.MoveCursor(1, goterm.Height()-1)
+func (t *Term) GetHeight() int {
+	return goterm.Height()
+}
+
+// Appends chars to the VIM command line
+func (t *Term) InsertAtBottomLine(x int, symbol string) {
+	goterm.MoveCursor(x, goterm.Height())
 	goterm.Print(symbol)
 	goterm.Flush()
 }

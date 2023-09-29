@@ -1,6 +1,66 @@
 package pkg
 
-import "github.com/buger/goterm"
+import (
+	"strings"
+
+	"github.com/buger/goterm"
+)
+
+type Line struct {
+	text       []rune
+	lineNumber int
+}
+
+func NewLine(lineNumber int) *Line {
+	return &Line{
+		text:       make([]rune, 0),
+		lineNumber: lineNumber,
+	}
+}
+
+func (l *Line) AddChar(x int, char rune) {
+	l.text = append(l.text, char)
+	x, y := l.getTermIndices(x, l.lineNumber)
+	goterm.MoveCursor(x, y)
+	goterm.Print(string(char))
+	goterm.Flush()
+}
+
+func (l *Line) RemoveChar(x int) {
+	l.text = l.text[:len(l.text)-1]
+	x, y := l.getTermIndices(x, l.lineNumber)
+	goterm.MoveCursor(x, y)
+	goterm.Print(" ")
+	// Move cursor one to left after deleting char
+	goterm.MoveCursor(x, y)
+	goterm.Flush()
+}
+
+func (l *Line) Clear() {
+	x, y := l.getTermIndices(0, l.lineNumber)
+	goterm.MoveCursor(x, y)
+	goterm.Print(strings.Repeat(" ", len(l.text)))
+	goterm.Flush()
+}
+
+func (l *Line) ClearFull() {
+	x, y := l.getTermIndices(0, l.lineNumber)
+	goterm.MoveCursor(x, y)
+	goterm.Print(strings.Repeat(" ", goterm.Width()))
+	goterm.Flush()
+}
+
+func (l *Line) getTermIndices(x int, y int) (int, int) {
+	return x + 1, y + 1
+}
+
+type ErrorLine struct{}
+
+func (e ErrorLine) PrintErrorLine(text string) {
+	goterm.MoveCursor(1, goterm.Height())
+	goterm.Print(goterm.Color(goterm.Background(text, goterm.RED), goterm.WHITE))
+	goterm.Flush()
+}
 
 type TermUtils struct{}
 

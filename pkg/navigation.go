@@ -5,16 +5,16 @@ type Navigation struct {
 	cursor  *Cursor
 }
 
-func NewNavigation(content *Content, cursor *Cursor) *Navigation {
+func NewNavigation(content *Content) *Navigation {
 	return &Navigation{
 		content: content,
-		cursor:  cursor,
+		cursor:  NewCursor(),
 	}
 }
 
 func (n *Navigation) MoveUp() {
 	n.cursor.Up()
-	if n.cursor.X >= n.content.LineLength(n.cursor.Y)-1 {
+	if n.cursor.X > n.content.LineLength(n.cursor.Y) {
 		n.cursor.SetX(n.content.LineLength(n.cursor.Y) - 1)
 	}
 }

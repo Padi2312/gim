@@ -1,54 +1,36 @@
 package pkg
 
 type NormalHandler struct {
-	Active            bool
-	navigation        *Navigation
-	insertModeHandler *InsertHandler
-	commandHandler    *CommandHandler
+	gim *Gim
 }
 
-func NewNormalHandler(navigation *Navigation) *NormalHandler {
+func NewNormalHandler(gim *Gim) *NormalHandler {
 	return &NormalHandler{
-		Active:     false,
-		navigation: navigation,
+		gim: gim,
 	}
 }
 
-func (n *NormalHandler) SetInsertHandler(insertModeHandler *InsertHandler) {
-	n.insertModeHandler = insertModeHandler
-}
-
-func (n *NormalHandler) SetCommandHandler(commandHandler *CommandHandler) {
-	n.commandHandler = commandHandler
-}
-
-func (n *NormalHandler) Activate() {
-	n.Active = true
-}
-
-func (n *NormalHandler) Deactivate() {
-	n.Active = false
+func (n *NormalHandler) Use() {
+	n.gim.Mode = NORMAL
 }
 
 func (n *NormalHandler) Handle(keyEvent KeyEvent) {
-	if !n.Active {
+	if n.gim.Mode != NORMAL {
 		return
 	}
 
 	switch keyEvent.Char {
 	case 'i', 'I', 'a', 'A':
-		n.Deactivate() // Deactive self and activate InsertHandler
-		n.insertModeHandler.Activate(keyEvent.Char)
+		n.gim.InsertHandler.Activate(keyEvent.Char)
 	case ':':
-		n.Deactivate()
-		n.commandHandler.Activate()
+		n.gim.CommandHandler.Activate()
 	case 'h':
-		n.navigation.MoveLeft()
+		n.gim.Navigation.MoveLeft()
 	case 'j':
-		n.navigation.MoveDown()
+		n.gim.Navigation.MoveDown()
 	case 'k':
-		n.navigation.MoveUp()
+		n.gim.Navigation.MoveUp()
 	case 'l':
-		n.navigation.MoveRight(false)
+		n.gim.Navigation.MoveRight(false)
 	}
 }
