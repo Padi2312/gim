@@ -47,7 +47,7 @@ func (c *CommandHandler) Handle(keyEvent KeyEvent) {
 		}
 		c.cmd = append(c.cmd, keyEvent.Char)
 		c.termLine.AddChar(len(c.cmd)-1, keyEvent.Char)
-	case keyboard.KeyBackspace:
+	case keyboard.KeyBackspace,keyboard.KeyBackspace2:
 		if len(c.cmd)-1 >= 1 {
 			c.cmd = c.cmd[:len(c.cmd)-1]
 			c.termLine.RemoveChar(len(c.cmd))

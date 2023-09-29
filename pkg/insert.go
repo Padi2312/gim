@@ -88,7 +88,7 @@ func (i InsertHandler) InsertBeforeCursor(keyEvent KeyEvent) {
 		}
 		i.gim.Navigation.MoveDownLineBegin()
 
-	case keyboard.KeyBackspace: // 4. Deletion of a char
+	case keyboard.KeyBackspace, keyboard.KeyBackspace2: // 4. Deletion of a char
 		i.gim.Content.Buffer[y] = append(i.gim.Content.Buffer[y][:x-1], i.gim.Content.Buffer[y][x:]...)
 		TermUtils{}.RemoveCharAt(x, y, i.gim.Content.Buffer[y])
 		i.gim.Navigation.MoveLeft()
