@@ -2,28 +2,51 @@ package pkg
 
 import "github.com/buger/goterm"
 
-func ClearCharAt(x int, y int) {
+type TermUtils struct{}
+
+func (t TermUtils) InsertAt(x int, y int, lineContent []rune) {
+	remaining := string(lineContent[x:])
+
+	x, y = getTermIndices(x, y)
 	goterm.MoveCursor(x, y)
-	goterm.Print(" ") // Clear residual characters
-	goterm.Flush()
+	goterm.Print(remaining)
+
 }
 
-func ClearFromTo(from int, to int, lineNumber int) {
-	goterm.MoveCursor(from, lineNumber)
+func (t TermUtils) RemoveCharAt(x int, y int, lineContent []rune) {
+	remaining := string(lineContent[x-1:]) + " "
+
+	x, y = getTermIndices(x, y)
+	goterm.MoveCursor(x-1, y)
+	goterm.Print(remaining)
+}
+
+func (t TermUtils) RemoveFromTo(xFrom int, xTo int, y int) {
+	xFrom, y = getTermIndices(xFrom, y)
+	xTo, y = getTermIndices(xTo, y)
+
+	goterm.MoveCursor(xFrom, y)
 	cleanLine := ""
-	for i := 0; i < to-from; i++ {
+	for i := 0; i < xTo-xFrom; i++ {
 		cleanLine += " "
 	}
 	goterm.Print(cleanLine)
 	goterm.Flush()
 }
 
-func ClearLine(lineNumber int) {
-	goterm.MoveCursor(1, lineNumber)
-	cleanLine := ""
-	for i := 0; i < goterm.Width(); i++ {
-		cleanLine += " "
+func (t TermUtils) InsertNewLine(lineNumber int, content [][]rune) {
+	lineNumber++
+	for index, row := range content {
+		goterm.MoveCursor(1, lineNumber+index)
+		for i := 0; i < goterm.Width(); i++ {
+			goterm.Print(" ")
+		}
+		goterm.MoveCursor(1, lineNumber+index)
+		goterm.Print(string(row))
+		goterm.Flush()
 	}
-	goterm.Print(cleanLine)
-	goterm.Flush()
+}
+
+func getTermIndices(x int, y int) (int, int) {
+	return x + 1, y + 1
 }
