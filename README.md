@@ -23,11 +23,14 @@ It's the same but worse and with less functionallity😀
 `I` - Enter insert _at beginning of line_ \
 `a` - Enter insert _after_ cursor \
 `A` - Enter insert _at end of line_ cursor 
+
 ### Movement 
 `h` - Left \
 `j` - Down \
 `k` - Up \
-`l` - Right 
+`l` - Right \
+`w` - Next word
+`b` - Previous word 
 
 ### Command Mode
 `:` - Enters command mode \

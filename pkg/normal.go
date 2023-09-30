@@ -1,36 +1,40 @@
 package pkg
 
 type NormalHandler struct {
-	gim *Gim
+	editor *Editor
 }
 
-func NewNormalHandler(gim *Gim) *NormalHandler {
+func NewNormalHandler(editor *Editor) *NormalHandler {
 	return &NormalHandler{
-		gim: gim,
+		editor: editor,
 	}
 }
 
 func (n *NormalHandler) Use() {
-	n.gim.Mode = NORMAL
+	n.editor.Mode = NORMAL
 }
 
 func (n *NormalHandler) Handle(keyEvent KeyEvent) {
-	if n.gim.Mode != NORMAL {
+	if n.editor.Mode != NORMAL {
 		return
 	}
 
 	switch keyEvent.Char {
 	case 'i', 'I', 'a', 'A':
-		n.gim.InsertHandler.Activate(keyEvent.Char)
+		n.editor.InsertHandler.Activate(keyEvent.Char)
 	case ':':
-		n.gim.CommandHandler.Activate()
+		n.editor.CommandHandler.Activate()
 	case 'h':
-		n.gim.Navigation.MoveLeft()
+		n.editor.Navigation.MoveLeft()
 	case 'j':
-		n.gim.Navigation.MoveDown()
+		n.editor.Navigation.MoveDown()
 	case 'k':
-		n.gim.Navigation.MoveUp()
+		n.editor.Navigation.MoveUp()
 	case 'l':
-		n.gim.Navigation.MoveRight(false)
+		n.editor.Navigation.MoveRight(false)
+	case 'w':
+		n.editor.Navigation.WordForward()
+	case 'b':
+		n.editor.Navigation.WordBackward()
 	}
 }

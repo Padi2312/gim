@@ -8,35 +8,35 @@ import (
 )
 
 type CommandHandler struct {
-	gim      *Gim
+	editor      *Editor
 	cmd      []rune
 	termLine *Line
 }
 
-func NewCommandHandler(gim *Gim) *CommandHandler {
+func NewCommandHandler(editor *Editor) *CommandHandler {
 	return &CommandHandler{
-		gim: gim,
+		editor: editor,
 		cmd: make([]rune, 0),
 	}
 }
 
 func (c *CommandHandler) Activate() {
-	c.gim.Mode = COMMAND
-	c.termLine = NewLine(c.gim.Term.GetHeight() - 1)
+	c.editor.Mode = COMMAND
+	c.termLine = NewLine(c.editor.Term.GetHeight() - 1)
 	c.termLine.ClearFull()
 	c.cmd = append(c.cmd, ':')
 	c.termLine.AddChar(0, ':')
 }
 
 func (c *CommandHandler) Deactivate() {
-	c.gim.Mode = NORMAL
+	c.editor.Mode = NORMAL
 	// Clear before removing cmd to get length of line for cleaning
 	c.termLine.Clear()
 	c.cmd = c.cmd[:0]
 }
 
 func (c *CommandHandler) Handle(keyEvent KeyEvent) {
-	if c.gim.Mode != COMMAND {
+	if c.editor.Mode != COMMAND {
 		return
 	}
 
@@ -47,7 +47,7 @@ func (c *CommandHandler) Handle(keyEvent KeyEvent) {
 		}
 		c.cmd = append(c.cmd, keyEvent.Char)
 		c.termLine.AddChar(len(c.cmd)-1, keyEvent.Char)
-	case keyboard.KeyBackspace,keyboard.KeyBackspace2:
+	case keyboard.KeyBackspace, keyboard.KeyBackspace2:
 		if len(c.cmd)-1 >= 1 {
 			c.cmd = c.cmd[:len(c.cmd)-1]
 			c.termLine.RemoveChar(len(c.cmd))
@@ -69,7 +69,7 @@ func (c *CommandHandler) SaveToFile(filename string) error {
 	}
 	defer file.Close()
 
-	content := c.gim.Content.ToString()
+	content := c.editor.Content.ToString()
 	_, err = file.WriteString(content)
 	return err
 }
@@ -87,14 +87,15 @@ func (c *CommandHandler) execute() {
 	switch cmd {
 	case "wq":
 		if len(args) > 1 {
-			c.gim.FileName = additional
+			c.editor.FileName = additional
 		}
 
-		if len(c.gim.FileName) == 0 {
+		if len(c.editor.FileName) == 0 {
 			c.Deactivate()
 			ErrorLine{}.PrintErrorLine("ERROR: no file name")
 		} else {
-			c.SaveToFile(c.gim.FileName)
+			c.SaveToFile(c.editor.FileName)
+			c.editor.Term.Clear()
 			os.Exit(0)
 		}
 	case "q":

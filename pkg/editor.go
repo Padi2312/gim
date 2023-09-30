@@ -8,7 +8,7 @@ const (
 	COMMAND Mode = "command"
 )
 
-type Gim struct {
+type Editor struct {
 	Mode       Mode
 	Navigation *Navigation
 	Content    *Content
@@ -22,11 +22,11 @@ type Gim struct {
 	CommandHandler *CommandHandler
 }
 
-func NewGim() *Gim {
+func NewEditor() *Editor {
 	content := NewContent()
 	navigation := NewNavigation(content)
 	term := NewTerm(navigation)
-	return &Gim{
+	return &Editor{
 		Mode:       NORMAL,
 		Navigation: navigation,
 		Content:    content,
@@ -35,12 +35,12 @@ func NewGim() *Gim {
 	}
 }
 
-func (g *Gim) Run() {
+func (e *Editor) Run() {
 	// Setup all necessary handlers
-	g.setupHandlers()
+	e.setupHandlers()
 
 	// Init and clear terminal
-	g.Term.Clear()
+	e.Term.Clear()
 
 	// Setup keyboard listener
 	keyboadListener := *NewKeyboardListener()
@@ -53,24 +53,24 @@ func (g *Gim) Run() {
 
 		// Depending on the current mode some keys
 		// show a different behaviour
-		switch g.Mode {
+		switch e.Mode {
 		case NORMAL:
-			g.NormalHandler.Handle(keyEvent)
+			e.NormalHandler.Handle(keyEvent)
 		case INSERT:
-			g.InsertHandler.Handle(keyEvent)
+			e.InsertHandler.Handle(keyEvent)
 		case COMMAND:
-			g.CommandHandler.Handle(keyEvent)
+			e.CommandHandler.Handle(keyEvent)
 		}
 
-		if g.Mode != COMMAND {
+		if e.Mode != COMMAND {
 
-			g.Term.Render()
+			e.Term.Render()
 		}
 	}
 }
 
-func (g *Gim) setupHandlers() {
-	g.NormalHandler = NewNormalHandler(g)
-	g.InsertHandler = NewInsertHandler(g)
-	g.CommandHandler = NewCommandHandler(g)
+func (e *Editor) setupHandlers() {
+	e.NormalHandler = NewNormalHandler(e)
+	e.InsertHandler = NewInsertHandler(e)
+	e.CommandHandler = NewCommandHandler(e)
 }
