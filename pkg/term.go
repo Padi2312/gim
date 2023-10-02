@@ -17,6 +17,23 @@ func NewTerm(navigation *Navigation) *Term {
 	}
 }
 
+func (t *Term) WriteFullContent(content [][]rune) {
+	goterm.Clear()
+	for i, row := range content {
+		x, y := t.getTermIndex(t.navigation.Pos())
+		goterm.MoveCursor(x, y)
+		goterm.Print(string(row))
+		if i != len(content)-1 {
+			// Move cursor down by one line
+			t.navigation.MoveDownLineBegin()
+		}
+	}
+	// Set Cursor back to beginning
+	t.navigation.cursor.SetX(0)
+	t.navigation.cursor.SetY(0)
+	goterm.Flush()
+}
+
 func (t *Term) GetHeight() int {
 	return goterm.Height()
 }

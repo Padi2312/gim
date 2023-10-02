@@ -1,5 +1,10 @@
 package pkg
 
+import (
+	"os"
+	"strings"
+)
+
 type Mode = string
 
 const (
@@ -35,6 +40,36 @@ func NewEditor() *Editor {
 	}
 }
 
+func (e *Editor) ReadFile(filePath string) {
+	if len(filePath) == 0 {
+		return
+	}
+
+	if _, err := os.Stat(filePath); err == nil {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			panic("ERROR: Failed to read file" + err.Error())
+		}
+		lines := strings.Split(string(data), "\n")
+		runeSlice := make([][]rune, len(lines))
+		for i, line := range lines {
+			if i != len(lines)-1 {
+				// Remove linebreak character from content
+				// because we dont want to print it to the terminal
+				runeSlice[i] = []rune(line[:len(line)-1])
+			} else {
+				runeSlice[i] = []rune(line)
+			}
+		}
+		e.Content.Buffer = runeSlice
+		e.FileName = filePath
+	} else if os.IsNotExist(err) {
+		panic("ERROR: File not found.")
+	} else {
+		panic("ERROR: " + err.Error())
+	}
+}
+
 func (e *Editor) Run() {
 	// Setup all necessary handlers
 	e.setupHandlers()
@@ -46,6 +81,9 @@ func (e *Editor) Run() {
 	keyboadListener := *NewKeyboardListener()
 	keyboardOutput := make(chan KeyEvent)
 	go keyboadListener.Listen(keyboardOutput)
+
+	// Write content to term in case a file is  from ruopenend
+	e.Term.WriteFullContent(e.Content.Buffer)
 
 	for {
 		// Wait for key input
@@ -63,7 +101,6 @@ func (e *Editor) Run() {
 		}
 
 		if e.Mode != COMMAND {
-
 			e.Term.Render()
 		}
 	}

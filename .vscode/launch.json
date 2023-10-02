@@ -10,7 +10,10 @@
             "request": "launch",
             "mode": "debug",
             "console": "integratedTerminal",
-            "program": "${file}"
+            "program": "${workspaceFolder}/cmd/gim",
+            "args": [
+                "../../test.txt"
+            ]
         }
     ]
 }
